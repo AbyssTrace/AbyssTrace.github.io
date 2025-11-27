@@ -1,5 +1,8 @@
 {
-  "name": "blog", // 与Cloudflare项目名一致
+  "name": "blog",
   "compatibility_date": "2025-11-27",
-  "assets": "./" // 简化配置
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  }
 }
