@@ -1,14 +1,5 @@
 {
-  "name": "abysstrace-github-io",
+  "name": "blog", // 与Cloudflare项目名一致
   "compatibility_date": "2025-11-27",
-  "assets": {
-    "directory": ".",
-    "include": ["**/*"],
-    "exclude": [
-      "wrangler.jsonc",
-      "README.md",
-      "*.log",
-      ".gitignore"
-    ]
-  }
+  "assets": "./" // 简化配置
 }
