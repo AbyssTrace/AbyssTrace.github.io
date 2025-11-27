@@ -1,0 +1,14 @@
+{
+  "name": "abysstrace-github-io",
+  "compatibility_date": "2025-11-27",
+  "assets": {
+    "directory": ".",
+    "include": ["**/*"],
+    "exclude": [
+      "wrangler.jsonc",
+      "README.md",
+      "*.log",
+      ".gitignore"
+    ]
+  }
+}
