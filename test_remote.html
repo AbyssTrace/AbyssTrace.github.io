@@ -1,0 +1,256 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>3D遥控器展示 - 灰色背景无阴影版</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #888888; /* 改为灰色背景 */
+            font-family: sans-serif; 
+        }
+        canvas { display: block; }
+        
+        /* 加载提示 */
+        #loading {
+            position: absolute; 
+            top: 50%; 
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.9); 
+            padding: 20px;
+            border-radius: 10px; 
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+            color: #333;
+        }
+
+        /* 底部按钮 */
+        #controls {
+            position: absolute; 
+            bottom: 30px; 
+            left: 50%;
+            transform: translateX(-50%); 
+            z-index: 10;
+        }
+        .btn {
+            background: #007AFF; 
+            color: white; 
+            border: none;
+            padding: 12px 24px; 
+            border-radius: 8px;
+            font-size: 16px; 
+            cursor: pointer; 
+            font-weight: bold;
+            transition: all 0.3s; 
+            box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3);
+        }
+        .btn:hover { 
+            background: #0056b3; 
+            transform: scale(1.05); 
+        }
+        .btn:active { 
+            transform: scale(0.95); 
+        }
+        
+        /* 状态提示 */
+        .status-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading">正在加载模型零件...</div>
+    <div class="status-info" id="statusInfo">背景: 灰色 | 阴影: 关闭</div>
+
+    <div id="controls">
+        <button class="btn" id="explodeBtn">查看爆炸图</button>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        // --- 1. 基础场景设置 ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x888888); // 灰色背景 (#888888)
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        
+        // 创建渲染器，明确禁用阴影
+        const renderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            alpha: true
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        
+        // 禁用阴影渲染
+        renderer.shadowMap.enabled = false;
+        
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // 灯光 - 禁用所有阴影
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.0); // 增加环境光亮度
+        ambientLight.castShadow = false;
+        scene.add(ambientLight);
+        
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(5, 10, 7);
+        dirLight.castShadow = false; // 禁用方向光阴影
+        scene.add(dirLight);
+        
+        // 添加一个补充光源，使模型更清晰
+        const fillLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        fillLight.position.set(-5, 5, -5);
+        fillLight.castShadow = false;
+        scene.add(fillLight);
+
+        // --- 2. 核心变量 ---
+        let model;
+        const modelParts = []; // 存储所有识别到的零件数据
+        let isExploded = false;
+        const animationSpeed = 0.1; // 动画平滑度 (0-1)
+        
+        // 【重要】指向你刚导出的模型文件名
+        const modelPath = './remote3.glb'; 
+
+        // --- 3. 加载模型与分析结构 ---
+        const loader = new GLTFLoader();
+        loader.load(modelPath, (gltf) => {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('statusInfo').textContent = "背景: 灰色 | 阴影: 关闭 | 模型: 原始颜色";
+            
+            model = gltf.scene;
+            scene.add(model);
+
+            // 强制计算世界矩阵，确保获取准确位置
+            model.updateMatrixWorld(true);
+            
+            // 遍历模型，确保所有子对象不产生阴影
+            model.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = false; // 禁用模型投射阴影
+                    child.receiveShadow = false; // 禁用模型接收阴影
+                    
+                    // 如果材质是标准材质，可以调整一些属性以获得更平坦的外观
+                    if (child.material.isMaterial) {
+                        // 调整材质以在无阴影环境下看起来更好
+                        if (child.material.type === 'MeshStandardMaterial') {
+                            child.material.roughness = 0.5;
+                            child.material.metalness = 0.2;
+                        }
+                    }
+                }
+            });
+
+            // 计算整体包围盒和中心点
+            const box = new THREE.Box3().setFromObject(model);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+
+            // 自动调整相机位置
+            camera.position.set(center.x + maxDim, center.y + maxDim, center.z + maxDim * 1.5);
+            controls.target.copy(center);
+
+            // 递归遍历模型，提取每一个子零件 (Mesh)
+            model.traverse((child) => {
+                if (child.isMesh) {
+                    // 记录原始本地位置
+                    const originalPos = child.position.clone();
+
+                    // 计算该零件在当前坐标系下的世界中心
+                    const childBox = new THREE.Box3().setFromObject(child);
+                    const childCenter = childBox.getCenter(new THREE.Vector3());
+
+                    // 计算爆炸方向：从整体中心指向零件中心
+                    const explodeDir = new THREE.Vector3().subVectors(childCenter, center).normalize();
+                    
+                    // 如果零件就在中心（如主壳体），给它一个微弱的默认位移防止重叠
+                    if (explodeDir.length() === 0) explodeDir.set(0, 1, 0);
+
+                    // 计算目标位置：沿方向移动 0.8 倍最大尺寸
+                    const targetPos = originalPos.clone().add(explodeDir.multiplyScalar(maxDim * 0.8));
+
+                    modelParts.push({
+                        mesh: child,
+                        originalPos: originalPos,
+                        targetPos: targetPos
+                    });
+                }
+            });
+
+            console.log("识别到独立零件数量:", modelParts.length);
+            console.log("阴影已关闭，背景已设为灰色，模型颜色为CAD原始颜色");
+            
+        }, undefined, (error) => {
+            console.error("加载失败:", error);
+            document.getElementById('loading').innerText = "模型加载失败，请检查文件名！";
+        });
+
+        // --- 4. 爆炸切换逻辑 ---
+        const explodeBtn = document.getElementById('explodeBtn');
+        explodeBtn.addEventListener('click', () => {
+            isExploded = !isExploded;
+            explodeBtn.innerText = isExploded ? "恢复合并状态" : "查看爆炸图";
+            
+            // 更新状态提示
+            const statusText = isExploded ? 
+                "爆炸视图 | 背景: 灰色 | 阴影: 关闭" : 
+                "正常视图 | 背景: 灰色 | 阴影: 关闭";
+            document.getElementById('statusInfo').textContent = statusText;
+        });
+
+        // --- 5. 动画循环 ---
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // 零件位移动画
+            modelParts.forEach(part => {
+                const target = isExploded ? part.targetPos : part.originalPos;
+                // 使用 Lerp 实现平滑补间动画
+                part.mesh.position.lerp(target, animationSpeed);
+            });
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // 窗口自适应
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
