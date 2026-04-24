@@ -1,0 +1,66 @@
+/* iPhone 经典渐变风：统一毛玻璃底色（首页文章 + 插件卡片 + 侧边栏） */
+#recent-posts .recent-post-items > .recent-post-item:not(.ads-wrap),
+#recent-posts > .recent-post-item:not(.ads-wrap),
+#aside-content .card-widget {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(255, 84, 170, 0.17) 0%, rgba(255, 84, 170, 0) 42%),
+    radial-gradient(circle at 92% 12%, rgba(110, 100, 255, 0.17) 0%, rgba(110, 100, 255, 0) 43%),
+    radial-gradient(circle at 18% 92%, rgba(255, 120, 210, 0.11) 0%, rgba(255, 120, 210, 0) 46%),
+    linear-gradient(135deg, rgba(28, 20, 54, 0.38) 0%, rgba(24, 22, 58, 0.35) 48%, rgba(20, 26, 60, 0.37) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 10px 30px rgba(5, 10, 20, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  backdrop-filter: blur(18px) saturate(170%);
+}
+
+#recent-posts .recent-post-items > .recent-post-item:not(.ads-wrap)::before,
+#recent-posts > .recent-post-item:not(.ads-wrap)::before,
+#aside-content .card-widget::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0) 42%),
+    radial-gradient(circle at 80% 82%, rgba(170, 140, 255, 0.08) 0%, rgba(170, 140, 255, 0) 48%);
+}
+
+/* 文章文字区与卡片背景一体化：移除单独底色，避免断层 */
+#recent-posts .recent-post-items > .recent-post-item > .recent-post-info {
+  position: relative;
+  z-index: 2;
+  background: transparent !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* 轮播卡片与 GitHub 日历卡片：取消内部纯色底，继承统一玻璃背景 */
+#swiper_container,
+#swiper_container .blog-slider,
+#swiper_container .blog-slider__item,
+#github_container {
+  background: transparent !important;
+}
+
+/* 保证插件卡片有圆角和边框层次 */
+#recent-posts > .recent-post-item:not(.ads-wrap) {
+  border-radius: 12px;
+}
+
+/* 不支持 backdrop-filter 时的降级 */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  #recent-posts .recent-post-items > .recent-post-item:not(.ads-wrap),
+  #recent-posts > .recent-post-item:not(.ads-wrap),
+  #aside-content .card-widget {
+    background:
+      linear-gradient(135deg, rgba(44, 30, 84, 0.45), rgba(32, 38, 88, 0.45)) !important;
+  }
+
+  #recent-posts .recent-post-items > .recent-post-item > .recent-post-info {
+    background: transparent !important;
+  }
+}
